@@ -1,461 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Luggage Verifier</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Baggage Verification</title>
 
-    :root {
-      --bg:      #0b0c0e;
-      --surface: #13141a;
-      --card:    #181920;
-      --border:  #22232d;
-      --muted:   #383948;
-      --dim:     #5a5b70;
-      --text:    #ddd8cc;
-      --accent:  #b89a6a;
-      --gold:    #d4b483;
-      --green:   #5aad82;
-      --red:     #b05555;
-    }
+<style>
+body {
+  font-family: system-ui;
+  background: #0f172a;
+  color: #e2e8f0;
+  margin: 0;
+  padding: 16px;
+}
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+.card {
+  max-width: 420px;
+  margin: auto;
+  background: #111827;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #1f2937;
+}
 
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    header h1 { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--accent); font-weight: 400; }
-    header span { font-size: 10px; color: var(--dim); letter-spacing: 0.2em; }
+h2 {
+  margin: 0 0 8px;
+}
 
-    main { flex: 1; max-width: 520px; margin: 0 auto; width: 100%; padding: 32px 20px; }
+.small {
+  color: #94a3b8;
+  font-size: 13px;
+}
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 16px;
-    }
+.owner {
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: bold;
+}
 
-    .card-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 22px;
-      color: var(--accent);
-      margin-bottom: 6px;
-    }
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+}
 
-    .sub { font-size: 10px; color: var(--dim); letter-spacing: 0.15em; margin-bottom: 16px; }
+button {
+  background: #2563eb;
+  color: white;
+}
 
-    input[type="text"], input[type="password"] {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 14px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      width: 100%;
-      outline: none;
-      letter-spacing: 0.1em;
-    }
-    input::placeholder { color: var(--muted); }
-
-    .btn {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      font-weight: 500;
-      padding: 10px 20px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #0b0c0e; }
-    .btn-ghost   { background: transparent; color: var(--dim); border: 1px solid var(--border); }
-    .btn-green   { background: rgba(90,173,130,0.15); color: var(--green); border: 1px solid rgba(90,173,130,0.3); }
-
-    /* Camera */
-    #camera-wrap {
-      position: relative;
-      width: 100%;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
-      aspect-ratio: 1;
-    }
-    #video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    #scan-line {
-      position: absolute;
-      left: 10%; right: 10%;
-      height: 2px;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-      animation: scanMove 2s ease-in-out infinite;
-      top: 10%;
-    }
-    @keyframes scanMove {
-      0%   { top: 10%; }
-      50%  { top: 85%; }
-      100% { top: 10%; }
-    }
-    #scan-frame {
-      position: absolute; inset: 0;
-      border: 2px solid transparent;
-    }
-    #scan-frame::before, #scan-frame::after,
-    #scan-frame > span::before, #scan-frame > span::after {
-      content: '';
-      position: absolute;
-      width: 24px; height: 24px;
-      border-color: var(--accent);
-      border-style: solid;
-    }
-    #scan-frame::before  { top: 8%;  left: 8%;  border-width: 2px 0 0 2px; }
-    #scan-frame::after   { top: 8%;  right: 8%; border-width: 2px 2px 0 0; }
-    #scan-frame > span::before { bottom: 8%; left: 8%;  border-width: 0 0 2px 2px; }
-    #scan-frame > span::after  { bottom: 8%; right: 8%; border-width: 0 2px 2px 0; }
-
-    #canvas { display: none; }
-
-    /* Code input */
-    #code-input-wrap { display: flex; gap: 10px; }
-    #code-input { letter-spacing: 0.25em; text-transform: uppercase; font-size: 16px; flex: 1; }
-
-    /* KV rows */
-    .kv { display: flex; gap: 10px; margin-bottom: 10px; }
-    .kv-label { font-size: 9px; color: var(--dim); letter-spacing: 0.15em; min-width: 90px; padding-top: 2px; flex-shrink: 0; }
-    .kv-value { font-size: 13px; color: var(--text); word-break: break-all; }
-    .kv-value.dim { color: var(--dim); font-size: 11px; }
-    .kv-value.accent { color: var(--gold); }
-
-    /* Result states */
-    .result-verified {
-      border-color: rgba(90,173,130,0.4) !important;
-    }
-    .result-verified .result-header {
-      color: var(--green);
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      margin-bottom: 16px;
-    }
-    .result-failed {
-      border-color: rgba(176,85,85,0.4) !important;
-    }
-
-    .luggage-photo {
-      width: 100%;
-      max-height: 200px;
-      object-fit: cover;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-    }
-
-    .err { color: var(--red); font-size: 11px; margin-top: 8px; }
-
-    .fade { animation: fi 0.3s ease; }
-    @keyframes fi { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--muted);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Tabs */
-    .tabs { display: flex; gap: 20px; margin-bottom: 24px; }
-    .tab-btn {
-      background: none; border: none; font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px; letter-spacing: 0.12em; cursor: pointer;
-      color: var(--dim); padding-bottom: 4px;
-      border-bottom: 1px solid transparent;
-    }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-  </style>
+.result {
+  margin-top: 12px;
+  font-weight: bold;
+}
+</style>
 </head>
+
 <body>
-  <header>
-    <h1>Luggage</h1>
-    <span>VERIFIER</span>
-  </header>
 
-  <main>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('scan')">SCAN / ENTER</button>
-      <button class="tab-btn"        onclick="switchTab('paste')">PASTE DATA</button>
-    </div>
+<div class="card">
+  <h2 id="name"></h2>
+  <div class="owner" id="owner"></div>
+  <div class="small" id="code"></div>
+  <div class="small" id="route"></div>
+  <div class="small" id="flight"></div>
 
-    <!-- TAB: SCAN / ENTER CODE -->
-    <div id="tab-scan">
+  <input type="password" id="pass" placeholder="Enter passphrase" />
+  <button onclick="verify()">Verify</button>
 
-      <!-- Camera section -->
-      <div class="card" id="camera-card">
-        <div class="card-title">Scan QR Code</div>
-        <div class="sub">Point camera at the luggage label</div>
-        <div id="camera-wrap" style="display:none;">
-          <video id="video" autoplay playsinline muted></video>
-          <div id="scan-frame"><span></span></div>
-          <div id="scan-line"></div>
-        </div>
-        <canvas id="canvas"></canvas>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-          <button class="btn btn-primary" id="btn-camera" onclick="startCamera()">📷 OPEN CAMERA</button>
-          <button class="btn btn-ghost"   id="btn-stop"   onclick="stopCamera()" style="display:none;">STOP</button>
-        </div>
-        <div id="scan-status" style="font-size:11px; color:var(--dim); margin-top:10px;"></div>
-      </div>
+  <div id="result" class="result"></div>
+</div>
 
-      <!-- Manual code entry -->
-      <div class="card">
-        <div class="card-title">Enter Code</div>
-        <div class="sub">Type the code from the luggage label</div>
-        <div id="code-input-wrap">
-          <input type="text" id="code-input" placeholder="e.g. MLX-4K9R" maxlength="10" oninput="this.value=this.value.toUpperCase()" />
-        </div>
-      </div>
-
-      <!-- Password + verify -->
-      <div class="card">
-        <div class="card-title">Master Password</div>
-        <div class="sub">Required to decrypt luggage registry</div>
-        <input type="password" id="pw-input" placeholder="••••••••" style="margin-bottom:12px;" />
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="verify()">VERIFY OWNERSHIP</button>
-          <button class="btn btn-ghost"   onclick="clearAll()">CLEAR</button>
-        </div>
-        <div id="verify-err" class="err"></div>
-      </div>
-    </div>
-
-    <!-- TAB: PASTE ENCRYPTED DATA -->
-    <div id="tab-paste" style="display:none;">
-      <div class="card">
-        <div class="card-title">Paste Encrypted Data</div>
-        <div class="sub">Use this if the app can't fetch data from GitHub</div>
-        <textarea id="paste-input" placeholder="Paste the contents of luggage-data.enc here..."
-          rows="6" style="background:var(--bg); border:1px solid var(--border); color:var(--text);
-            font-family:'IBM Plex Mono',monospace; font-size:11px; padding:12px; border-radius:10px;
-            width:100%; outline:none; resize:vertical; margin-bottom:12px;"></textarea>
-        <button class="btn btn-primary" onclick="saveManualData()">USE THIS DATA</button>
-        <div id="paste-status" style="font-size:11px; margin-top:8px;"></div>
-      </div>
-    </div>
-
-    <!-- RESULT -->
-    <div id="result-wrap" style="display:none;"></div>
-  </main>
-
-  <script>
-  // ─── CONFIG ──────────────────────────────────────────────────────
-  // UPDATE THIS to your GitHub raw file URL:
-  // e.g. https://raw.githubusercontent.com/yourname/luggage/main/luggage-data.enc
-  const DATA_URL = "https://raw.githubusercontent.com/gnizto/luggage-enc/main/luggage-data.enc";  // left blank — user pastes data or configure below
-
-  // ─── CRYPTO ──────────────────────────────────────────────────────
-  async function deriveKey(password) {
-    const enc = new TextEncoder();
-    const raw = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: enc.encode("lug-salt-v1"), iterations: 100000, hash: "SHA-256" },
-      raw, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-    );
-  }
-
-  async function decryptData(b64, password) {
-    const buf = Uint8Array.from(atob(b64.trim()), c => c.charCodeAt(0));
-    const iv  = buf.slice(0, 12);
-    const ct  = buf.slice(12);
-    const key = await deriveKey(password);
-    const dec = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
-    return new TextDecoder().decode(dec);
-  }
-
-  function djb2(str) {
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) h = (Math.imul(h, 33) ^ str.charCodeAt(i)) >>> 0;
-    return h.toString(36).toUpperCase().padStart(6, "0");
-  }
-  function verifyToken(code, pass) {
-    return djb2(code + "::verify::" + pass).slice(0, 8);
-  }
-
-  // ─── STATE ───────────────────────────────────────────────────────
-  let stream       = null;
-  let scanInterval = null;
-  let manualData   = localStorage.getItem("lug_enc_manual") || "";
-
-  // Read code from URL ?c=XXX
-  const urlCode = new URLSearchParams(location.search).get("c") || "";
-  if (urlCode) {
-    document.getElementById("code-input").value = urlCode.toUpperCase();
-    document.getElementById("pw-input").focus();
-  }
-
-  // ─── TABS ────────────────────────────────────────────────────────
-  function switchTab(t) {
-    document.getElementById("tab-scan").style.display  = t === "scan"  ? "" : "none";
-    document.getElementById("tab-paste").style.display = t === "paste" ? "" : "none";
-    document.querySelectorAll(".tab-btn").forEach((b, i) => {
-      b.classList.toggle("active", (i === 0) === (t === "scan"));
-    });
-  }
-
-  function saveManualData() {
-    const v = document.getElementById("paste-input").value.trim();
-    if (!v) return;
-    manualData = v;
-    localStorage.setItem("lug_enc_manual", v);
-    document.getElementById("paste-status").style.color = "var(--green)";
-    document.getElementById("paste-status").textContent = "✓ Data saved. Switch to Scan / Enter to verify.";
-  }
-
-  // ─── CAMERA ──────────────────────────────────────────────────────
-  async function startCamera() {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      const video = document.getElementById("video");
-      video.srcObject = stream;
-      document.getElementById("camera-wrap").style.display = "";
-      document.getElementById("btn-camera").style.display  = "none";
-      document.getElementById("btn-stop").style.display    = "";
-      document.getElementById("scan-status").textContent   = "Scanning…";
-      scanInterval = setInterval(scanFrame, 300);
-    } catch (e) {
-      document.getElementById("scan-status").textContent = "Camera access denied. Use manual entry below.";
-    }
-  }
-
-  function stopCamera() {
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    clearInterval(scanInterval);
-    document.getElementById("camera-wrap").style.display = "none";
-    document.getElementById("btn-camera").style.display  = "";
-    document.getElementById("btn-stop").style.display    = "none";
-    document.getElementById("scan-status").textContent   = "";
-  }
-
-  function scanFrame() {
-    const video = document.getElementById("video");
-    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-    const canvas  = document.getElementById("canvas");
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-    if (code && code.data) {
-      // Extract code — handle both raw code and full URL
-      let extracted = code.data.trim();
-      try {
-        const u = new URL(extracted);
-        extracted = u.searchParams.get("c") || extracted;
-      } catch {}
-      document.getElementById("code-input").value = extracted.toUpperCase();
-      document.getElementById("scan-status").textContent = "✓ Code detected: " + extracted.toUpperCase();
-      stopCamera();
-      document.getElementById("pw-input").focus();
-    }
-  }
-
-  // ─── VERIFY ──────────────────────────────────────────────────────
-  async function verify() {
-    const code = document.getElementById("code-input").value.trim().toUpperCase();
-    const pw   = document.getElementById("pw-input").value;
-    const errEl = document.getElementById("verify-err");
-    errEl.textContent = "";
-
-    if (!code) return (errEl.textContent = "Enter or scan a luggage code.");
-    if (!pw)   return (errEl.textContent = "Enter your master password.");
-
-    const resultWrap = document.getElementById("result-wrap");
-    resultWrap.style.display = "";
-    resultWrap.innerHTML = `<div class="card" style="text-align:center;"><span class="spinner"></span><div style="font-size:11px;color:var(--dim);margin-top:12px;">Verifying…</div></div>`;
-
-    try {
-      // 1. Get encrypted data
-      let encRaw = manualData;
-      if (!encRaw && DATA_URL) {
-        const res = await fetch(DATA_URL + "?t=" + Date.now());
-        if (!res.ok) throw new Error("Could not fetch registry from GitHub.");
-        encRaw = await res.text();
-      }
-      if (!encRaw) throw new Error("No data available. Use the 'Paste Data' tab to load your encrypted registry.");
-
-      // 2. Decrypt
-      let records;
-      try {
-        const plain = await decryptData(encRaw, pw);
-        records = JSON.parse(plain);
-      } catch {
-        throw new Error("Wrong password or corrupt data.");
-      }
-
-      // 3. Find luggage
-      const item = records.find(r => r.code === code);
-      if (!item) throw new Error(`No luggage found with code ${code}.`);
-
-      // 4. Compute token
-      const token = verifyToken(code, pw);
-
-      // 5. Render proof
-      resultWrap.innerHTML = `
-        <div class="card result-verified fade">
-          <div class="result-header">✓ OWNERSHIP VERIFIED</div>
-          ${item.color ? `<div style="font-size:11px;color:var(--dim);margin-bottom:16px;">${item.color}</div>` : ""}
-          <div class="kv"><span class="kv-label">NICKNAME</span><span class="kv-value accent">${esc(item.nickname)}</span></div>
-          <div class="kv"><span class="kv-label">CODE</span><span class="kv-value">${esc(item.code)}</span></div>
-          <div class="kv"><span class="kv-label">TOKEN</span><span class="kv-value dim">${token}</span></div>
-          ${item.passphrase ? `<div class="kv"><span class="kv-label">PASSPHRASE</span><span class="kv-value">${esc(item.passphrase)}</span></div>` : ""}
-          ${item.notes ? `<div class="kv"><span class="kv-label">NOTES</span><span class="kv-value dim">${esc(item.notes)}</span></div>` : ""}
-          <div class="kv"><span class="kv-label">REGISTERED</span><span class="kv-value dim">${new Date(item.createdAt).toLocaleDateString()}</span></div>
-        </div>`;
-
-    } catch (e) {
-      resultWrap.innerHTML = `
-        <div class="card result-failed fade">
-          <div style="color:var(--red);font-size:10px;letter-spacing:0.15em;margin-bottom:10px;">✗ VERIFICATION FAILED</div>
-          <div style="font-size:12px;color:var(--dim);">${esc(e.message)}</div>
-        </div>`;
-    }
-  }
-
-  function clearAll() {
-    document.getElementById("code-input").value = "";
-    document.getElementById("pw-input").value   = "";
-    document.getElementById("verify-err").textContent = "";
-    document.getElementById("result-wrap").style.display = "none";
-    stopCamera();
-  }
-
-  function esc(str) {
-    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-
-  // Auto-focus password if code came from URL
-  if (urlCode) setTimeout(() => document.getElementById("pw-input").focus(), 200);
-  </script>
+<!-- <script src="app.js"></script> -->
+<script src="app.js"></script>
 </body>
 </html>
